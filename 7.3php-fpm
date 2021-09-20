@@ -1,0 +1,78 @@
+FROM php:7.3-fpm
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    mariadb-client \
+    libpng-dev \
+    libjpeg62-turbo-dev \
+    libfreetype6-dev \
+    libzip-dev \
+    locales \
+    zip \
+    jpegoptim optipng pngquant gifsicle \
+    vim \
+    unzip \
+    git \
+    curl \
+    nginx \ 
+    supervisor \
+    libldap2-dev
+
+# Clear cache
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install extensions
+RUN docker-php-ext-install pdo_mysql mbstring zip exif pcntl
+RUN docker-php-ext-configure gd --with-gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ --with-png-dir=/usr/include/
+RUN docker-php-ext-install gd
+RUN docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu/ && \
+    docker-php-ext-install ldap
+
+# Install composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+
+# Set working directory
+WORKDIR /var/www
+
+
+# Copy composer.lock and composer.json
+# COPY composer.lock composer.json /var/www/
+
+# RUN composer install --no-scripts --no-autoloader
+
+# COPY ./ .
+
+# COPY ./.docker/supervisor/supervisor.conf /etc/supervisor/ 
+# COPY ./.docker/nginx/nginx.conf /etc/nginx/nginx.conf
+# COPY ./.docker/php/php.ini-development /usr/local/etc/php/php.ini
+# RUN find /var/log/nginx -type d -exec chmod 775 {} \; && \
+#     find /var/log/nginx -type d -exec chown -R www-data:www-data {} \; && \
+#     find /var/lib/nginx -type d -exec chown -R www-data:www-data {} \; && \
+#     find /var/lib/nginx -type d -exec chmod 775 {} \; && \
+#     find /run -exec chmod 775 {} \; && \
+#     find /run -exec chown -R www-data:www-data {} \;
+
+
+# # Add user for laravel application
+# RUN groupadd -g 1000 www
+# RUN useradd -u 1000 -ms /bin/bash -g www www
+
+# # Copy existing application directory permissions
+# COPY --chown=www:www . /var/www
+
+# RUN mv .env.example .env && \
+#     composer dump-autoload --optimize && \
+#     php artisan key:generate && \
+#     find . -type d -exec chmod 775 {} \; && \
+#     find . -type f -exec chmod 664 {} \; && \
+#     find ./.docker/run/run.sh -exec sed -i -e 's/\r$//' {} \; && \
+#     find ./.docker/run/run.sh -exec chmod 775 {} \; && \
+#     find . -exec chown -R www-data:www-data {} \;
+    
+
+#Change current user to www
+USER www-data
+EXPOSE 8080
+CMD ["/var/www/.docker/run/run.sh"]

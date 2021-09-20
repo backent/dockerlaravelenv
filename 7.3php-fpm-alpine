@@ -1,0 +1,110 @@
+FROM php:7.3-fpm-alpine3.8
+
+# Add Repositories
+RUN rm -f /etc/apk/repositories &&\
+    echo "http://dl-cdn.alpinelinux.org/alpine/v3.8/main" >> /etc/apk/repositories && \
+    echo "http://dl-cdn.alpinelinux.org/alpine/v3.8/community" >> /etc/apk/repositories
+
+# Add Build Dependencies
+RUN apk update && apk add --no-cache --virtual .build-deps  \
+    zlib-dev \
+    libjpeg-turbo-dev \
+    libpng-dev \
+    libxml2-dev \
+    bzip2-dev
+
+# Add Production Dependencies
+RUN apk add --update --no-cache \
+    jpegoptim \
+    pngquant \
+    optipng \
+    supervisor \
+    nano \
+    icu-dev \
+    freetype-dev \
+    nginx \
+    mysql-client \
+    libzip-dev \
+    git
+
+# Configure & Install Extension
+RUN docker-php-ext-configure \
+    opcache --enable-opcache &&\
+    docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ &&\
+    docker-php-ext-install \
+    opcache \
+    mysqli \
+    pdo \
+    pdo_mysql \
+    sockets \
+    json \
+    intl \
+    gd \
+    xml \
+    zip \
+    bz2 \
+    pcntl \
+    bcmath
+# Install composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# Remove Build Dependencies
+RUN apk del -f .build-deps
+
+# # Set working d# Set working directory
+# WORKDIR /var/www
+# ENV USER=laravel
+# ENV UID=1000
+# ENV GID=1000
+
+
+# # Copy composer.lock and composer.json
+# COPY composer.lock composer.json /var/www/
+
+# RUN composer install --no-scripts --no-autoloader
+# RUN addgroup -S "$USER"
+# RUN adduser \
+#     --disabled-password \
+#     --gecos "" \
+#     --home "$(pwd)" \
+#     --ingroup "$USER" \
+#     --no-create-home \
+#     --uid "$UID" \
+#     "$USER"
+
+# # Copy existing application directory permissions
+# COPY --chown=laravel:laravel . /var/www
+
+# COPY ./.docker/supervisor/supervisor.conf /etc/supervisor/ 
+# COPY ./.docker/nginx/nginx.conf /etc/nginx/nginx.conf
+# COPY ./.docker/php/php.ini-development /usr/local/etc/php/php.ini
+# RUN find /var/log/nginx -type d -exec chmod 775 {} \; && \
+#     find /var/log/nginx -type d -exec chown -R laravel:laravel {} \; && \
+#     find /var/lib/nginx -type d -exec chmod 775 {} \; && \
+#     find /var/lib/nginx -type d -exec chown -R laravel:laravel {} \; && \
+#     mkdir /var/tmp/nginx/client_body && \ 
+#     find /var/tmp/nginx/client_body -type d -exec chmod 775 {} \; && \
+#     find /var/tmp/nginx/client_body -type d -exec chown -R laravel:laravel {} \; && \
+#     find /run -exec chmod 775 {} \; && \
+#     find /run -exec chown -R laravel:laravel {} \;
+
+
+# # # Add user for laravel application
+# # RUN groupadd -g 1000 www
+# # RUN useradd -u 1000 -ms /bin/bash -g www www
+
+
+# RUN mv .env.example .env && \
+#     # composer dump-autoload --optimize && \
+#     # php artisan key:generate && \
+#     find . -type d -exec chmod 775 {} \; && \
+#     find . -type f -exec chmod 664 {} \; && \
+#     find ./.docker/run/run.sh -exec sed -i -e 's/\r$//' {} \; && \
+#     find ./.docker/run/run.sh -exec chmod 775 {} \; && \
+#     find . -exec chown -R laravel:laravel {} \;
+    
+
+# #Change current user to www
+# USER laravel
+# EXPOSE 8080
+# CMD ["/var/www/.docker/run/run.sh"]
