@@ -31,6 +31,7 @@ RUN apk add --update --no-cache \
 RUN docker-php-ext-configure \
     opcache --enable-opcache &&\
     docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ &&\
+    docker-php-ext-configure exif &&\
     docker-php-ext-install \
     opcache \
     mysqli \
@@ -44,7 +45,9 @@ RUN docker-php-ext-configure \
     zip \
     bz2 \
     pcntl \
-    bcmath
+    bcmath \
+    exif && \
+    docker-php-ext-enable exif
 # Install composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
